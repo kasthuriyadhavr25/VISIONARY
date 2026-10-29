@@ -1,0 +1,8 @@
+import type { ReferenceEdits } from './ReferenceComposite'
+import './alignmentControls.css'
+import './removeOverlay.css'
+export default function AlignmentControls({ feature, edits, onChange }: { feature: string; edits: ReferenceEdits; onChange: (edits: ReferenceEdits) => void }) {
+  const group = feature === 'Hair texture' ? 'Hair' : feature
+  const sliders = [{ key: 'X', label: 'Horizontal', min: -24, max: 24, fallback: 0 }, { key: 'Y', label: 'Vertical', min: -24, max: 24, fallback: 0 }, { key: 'Scale', label: 'Size', min: 75, max: 125, fallback: 100 }]
+  return <div className="alignment-controls"><div className="alignment-heading"><div><strong>Align {group.toLowerCase()}</strong><span>Adjust the overlay; removing it keeps witness details.</span></div><button onClick={() => { const next = { ...edits }; sliders.forEach(s => delete next[`@${group}${s.key}`]); onChange(next) }}>Reset position</button></div><div className="alignment-sliders">{sliders.map(s => { const key = `@${group}${s.key}`, value = Number(edits[key] ?? s.fallback); return <label key={key}><span>{s.label}<b>{s.key === 'Scale' ? `${value}%` : value}</b></span><input aria-label={`${group} ${s.label.toLowerCase()}`} type="range" min={s.min} max={s.max} value={value} onChange={e => onChange({ ...edits, [key]: e.target.value })}/></label> })}</div><button className="remove-overlay" onClick={() => { const next = { ...edits }; if (group === 'Hair') { delete next['Hair length']; delete next['Hair texture']; delete next['@hairSource'] } else delete next[group]; onChange(next) }}>Remove {group.toLowerCase()} overlay</button></div>
+}
