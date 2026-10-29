@@ -8,21 +8,39 @@ import { MongoClient } from 'mongodb';
 const app = express();
 const port = Number(process.env.PORT || 8787);
 const production = process.env.NODE_ENV === 'production';
-const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);
+
+const allowedOrigins = [
+  'https://visionary-o5yw.vercel.app',
+  ...(process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean),
+];
 
 app.disable('x-powered-by');
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || !production || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Origin is not allowed by CORS. Add the frontend origin to CORS_ORIGINS.'));
-  },
-  methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-// Audio and two image data URLs can be large; keep a bounded request body.
-app.use(express.json({ limit: '40mb' }));
-app.use('/api/', rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: true, legacyHeaders: false }));
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Permit requests without an Origin header (e.g. health checks).
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`Blocked CORS origin: ${origin}`);
+      return callback(null, false);
+    },
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204,
+  })
+);
 
 let mongoClient;
 let casesCollection;
